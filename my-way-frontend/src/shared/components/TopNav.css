@@ -1,0 +1,128 @@
+.topnav-shell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.topnav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.topnav-dot {
+  width: 1rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #ffe08a, #ef8f3f 65%, #7a3f13);
+  box-shadow: 0 0 0 0.25rem rgba(239, 143, 63, 0.2);
+}
+
+.topnav-brand h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.topnav-brand p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.topnav-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.topnav-links-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.topnav-menu {
+  position: relative;
+}
+
+.topnav-avatar-trigger {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--brand-soft) 45%, white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topnav-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.topnav-avatar-fallback {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.topnav-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  min-width: 9rem;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  box-shadow: 0 14px 30px rgba(38, 39, 54, 0.12);
+  padding: 0.35rem;
+  display: grid;
+  gap: 0.2rem;
+  z-index: 40;
+}
+
+.topnav-dropdown button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
+.topnav-dropdown button:hover {
+  background: var(--brand-soft);
+}
+
+.topnav-link {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: all 160ms ease;
+}
+
+.topnav-link:hover {
+  color: var(--text-main);
+  border-color: var(--border-strong);
+}
+
+.topnav-link-active {
+  color: var(--text-main);
+  background: var(--brand-soft);
+  border-color: var(--border-strong);
+}
+

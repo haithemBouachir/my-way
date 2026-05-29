@@ -1,0 +1,33 @@
+Projet : Développement d’une Application de Suivi de Compétences et de Carrière avec Recommandations de Formation
+
+Contexte :  
+Dans un monde professionnel en constante évolution, il est essentiel pour les individus de suivre leurs compétences, de planifier leur développement de carrière et d'acquérir de nouvelles compétences pour rester compétitifs. Ce projet consiste à développer une application mobile et web permettant aux utilisateurs de suivre leurs compétences, de planifier leur parcours professionnel et de recevoir des recommandations personnalisées de formations et d’opportunités de carrière.
+
+Objectifs du Projet :  
+L’objectif est de créer une application qui aide les utilisateurs à mieux comprendre et gérer leur évolution professionnelle. L'application permettra aux utilisateurs de suivre les compétences acquises, d'identifier celles à développer, et de trouver des formations ou des opportunités adaptées à leur parcours et leurs ambitions professionnelles.
+Spécifications Fonctionnelles
+
+Suivi des Compétences :
+L’application permet aux utilisateurs de créer un profil professionnel en listant leurs compétences actuelles (techniques, soft skills, langues, etc.).
+Suivi des compétences acquises et identification des domaines de développement à travers une évaluation automatique ou manuelle.
+Intégration d’un système de notation ou d’auto-évaluation permettant aux utilisateurs de suivre l’évolution de leurs compétences au fil du temps.
+
+
+ Planification de Carrière :
+L’application propose un plan de carrière personnalisé basé sur le profil de l'utilisateur, ses ambitions et ses compétences.
+Suggestions de trajectoires professionnelles possibles, en fonction des tendances du marché du travail, des domaines d'intérêt et des compétences requises.
+Alertes et rappels pour planifier des étapes spécifiques de développement professionnel (par exemple, atteindre un niveau de compétence particulier ou postuler à un poste précis).
+ Recommandations de Formation :
+L’application fournit des recommandations de formations (en ligne, en présentiel) adaptées aux besoins de développement de compétences de l’utilisateur.
+Partenariats avec des plateformes de formation (comme Coursera, Udemy, LinkedIn Learning) pour intégrer des cours pertinents directement dans l'application.
+Suggestions basées sur l'IA, analysant les tendances du marché et les compétences les plus recherchées dans le secteur d’activité de l'utilisateur.
+
+ Réseautage Professionnel :
+Mise en relation avec des professionnels et des mentors via un réseau intégré dans l’application.
+Possibilité de discuter avec des experts, de poser des questions ou d’échanger sur des sujets liés à la carrière.
+Partage de contenus pertinents (articles, webinaires, conférences) pour enrichir le développement professionnel.
+
+Technologies suggérées:
+- Base de données : MySQl pour une gestion efficace des données.
+- Backend Spring Boot
+- Frontend Web React:

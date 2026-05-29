@@ -1,0 +1,87 @@
+================================================================================
+PROJET MY-WAY - PLAN DE TRAVAIL EXECUTABLE
+================================================================================
+Date de mise a jour: 2026-05-25
+Source fonctionnelle: projet.txt
+
+================================================================================
+1) ETAT REEL DU REPOSITORY
+================================================================================
+- Backend: dossier present, code applicatif non initialise
+- Frontend: dossier present, code applicatif non initialise
+- Documents: projet.txt et plan.txt disponibles
+
+Conclusion:
+Le projet doit etre construit depuis zero en restant aligne avec les exigences.
+
+================================================================================
+2) OBJECTIF MVP WEB + API (PHASE ACTUELLE)
+================================================================================
+Livrer une version utilisable avec:
+1. Profil utilisateur (MVP local)
+2. Suivi de competences (CRUD)
+3. Plan de carriere (CRUD + progression)
+4. Recommandations de formations (liste + matching simple)
+5. UI web coherente avec styles globaux et styles locaux par module
+
+Hors perimetre immediate:
+- IA avancee, reseautage complet, mobile natif, integrations externes reelles
+
+================================================================================
+3) ARCHITECTURE CIBLE
+================================================================================
+BACKEND (Spring Boot 3)
+- domain: entites/metier + regles metier
+- application: cas d'usage + ports
+- infrastructure: persistence JPA + controllers REST
+- shared: gestion d'erreurs, DTO, mapping, validation
+
+FRONTEND (React + TypeScript + Vite)
+- app: routing, providers, layout
+- features: skills, career, training, dashboard
+- shared: composants UI, client HTTP, types
+- styles:
+	- global.css: tokens, reset, typographie, grille, utilitaires
+	- styles locaux: chaque page/composant avec son fichier CSS dedie
+
+================================================================================
+4) PLAN D'IMPLEMENTATION PAR ETAPES
+================================================================================
+ETAPE A - BOOTSTRAP TECHNIQUE
+1. Initialiser backend Maven Spring Boot
+2. Initialiser frontend React TypeScript avec Yarn
+3. Configurer variables d'environnement et CORS
+
+ETAPE B - SOCLE BACKEND SOLID
+1. Creer couches domain/application/infrastructure
+2. Implementer modules Skills, CareerPlan, Training
+3. Ajouter validation et gestion d'erreurs centralisee
+4. Preparer scripts d'execution et configuration MySQL
+
+ETAPE C - SOCLE FRONTEND UX
+1. Mettre en place routing et shell applicatif
+2. Integrer client API et typage TypeScript
+3. Construire pages Dashboard, Skills, Career, Training
+4. Appliquer systeme de styles global + styles locaux
+
+ETAPE D - VERIFICATION
+1. Build backend
+2. Build frontend
+3. Verification manuelle des parcours principaux
+
+================================================================================
+5) DEFINITION DU DONE POUR CETTE ITERATION
+================================================================================
+- API demarre et expose les endpoints MVP documentes
+- Frontend demarre et consomme l'API pour les ecrans MVP
+- Le design est coherent, lisible, responsive, et structure en styles globaux + locaux
+- Le code respecte une separation claire des responsabilites
+
+================================================================================
+6) PROCHAINE ACTION
+================================================================================
+Demarrer tout de suite l'ETAPE A, puis enchainer l'ETAPE B et C dans ce cycle.
+
+================================================================================
+FIN DU PLAN
+================================================================================

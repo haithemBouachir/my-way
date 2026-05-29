@@ -1,0 +1,72 @@
+.cv-history-layout {
+  display: grid;
+}
+
+.cv-history-panel {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.cv-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cv-history-header p {
+  margin-top: 0.3rem;
+  color: var(--text-muted);
+}
+
+.cv-history-feedback {
+  color: #1a6d3e;
+  font-weight: 600;
+}
+
+.cv-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.cv-history-item {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.8rem;
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: 1fr auto;
+}
+
+.cv-history-item p {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+}
+
+.cv-history-actions {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+}
+
+.cv-history-empty {
+  color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+  .cv-history-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cv-history-item {
+    grid-template-columns: 1fr;
+  }
+
+  .cv-history-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}

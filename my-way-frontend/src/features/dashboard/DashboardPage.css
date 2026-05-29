@@ -1,0 +1,48 @@
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-card {
+  grid-column: span 4;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+  padding: 1.2rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.dashboard-card h3 {
+  margin-top: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.dashboard-card strong {
+  font-size: 2rem;
+  color: var(--brand-main);
+}
+
+.dashboard-card-highlight {
+  grid-column: span 12;
+  background: linear-gradient(130deg, #fff5de, #fce8cf 48%, #fbefd9);
+  border-color: #f2c282;
+}
+
+.dashboard-card-highlight h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.4rem;
+}
+
+.dashboard-card-highlight p {
+  margin: 0;
+  max-width: 70ch;
+}
+
+@media (max-width: 900px) {
+  .dashboard-card {
+    grid-column: span 12;
+  }
+}

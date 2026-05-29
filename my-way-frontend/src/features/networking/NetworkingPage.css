@@ -1,0 +1,75 @@
+.networking-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.networking-jobs-panel {
+  grid-column: 1 / -1;
+}
+
+.networking-jobs-hint {
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+}
+
+.networking-jobs-search {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem;
+}
+
+.networking-jobs-search input {
+  border: 1px solid var(--border-strong);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.65rem;
+}
+
+.networking-jobs-feedback {
+  margin-top: 0.55rem;
+  color: var(--text-muted);
+}
+
+.networking-jobs-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.networking-jobs-list li {
+  border: 1px solid var(--border-soft);
+  border-radius: 0.85rem;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.networking-jobs-list p {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+}
+
+.networking-jobs-list a {
+  align-self: center;
+  text-decoration: none;
+  color: var(--brand-main);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .networking-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .networking-jobs-search {
+    grid-template-columns: 1fr;
+  }
+
+  .networking-jobs-list li {
+    flex-direction: column;
+  }
+}
