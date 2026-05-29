@@ -27,8 +27,8 @@
 
 .dashboard-card-highlight {
   grid-column: span 12;
-  background: linear-gradient(130deg, #fff5de, #fce8cf 48%, #fbefd9);
-  border-color: #f2c282;
+  background: linear-gradient(130deg, #f0f6ff, #e7f0ff 48%, #f7fbff);
+  border-color: #b7d3ff;
 }
 
 .dashboard-card-highlight h2 {

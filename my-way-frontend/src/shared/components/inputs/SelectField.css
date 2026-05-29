@@ -8,7 +8,7 @@
   border-radius: 0.75rem;
   padding: 0.62rem 0.72rem;
   font-size: 0.95rem;
-  background: linear-gradient(180deg, #fffefc, #f8f3eb);
+  background: linear-gradient(180deg, #ffffff, #f4f8ff);
   color: var(--text-main);
   display: flex;
   justify-content: space-between;
@@ -18,17 +18,17 @@
 }
 
 .mw-select-trigger:hover {
-  border-color: #b98d64;
+  border-color: var(--brand-main);
 }
 
 .mw-select-trigger:focus {
   outline: none;
-  border-color: #aa6735;
-  box-shadow: 0 0 0 0.2rem rgba(170, 103, 53, 0.18);
+  border-color: var(--brand-main);
+  box-shadow: 0 0 0 0.2rem rgba(10, 102, 255, 0.2);
 }
 
 .mw-select-arrow {
-  color: #8a6a4c;
+  color: #3f6eb8;
   font-size: 0.95rem;
 }
 

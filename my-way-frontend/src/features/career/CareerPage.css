@@ -46,7 +46,7 @@
   border: 1px solid var(--border-soft);
   border-radius: 0.9rem;
   padding: 0.9rem;
-  background: #fffefb;
+  background: var(--surface-muted);
 }
 
 .career-list h3 {

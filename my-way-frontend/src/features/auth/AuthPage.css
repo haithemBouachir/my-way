@@ -6,20 +6,21 @@
 
 .auth-card {
   width: min(520px, 100%);
-  background: var(--surface);
+  background: linear-gradient(180deg, #ffffff, #f9fcff);
   border: 1px solid var(--border-soft);
   border-radius: 1.2rem;
-  padding: 1.2rem;
+  padding: 1.35rem;
   box-shadow: var(--shadow-soft);
 }
 
 .auth-card h2 {
   margin: 0;
+  font-size: 1.5rem;
 }
 
 .auth-card p {
   color: var(--text-muted);
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
 }
 
 .auth-form {
@@ -34,32 +35,23 @@
   color: var(--text-muted);
 }
 
-.auth-form input {
-  border: 1px solid var(--border-strong);
+.auth-form .form-control {
+  border-color: var(--border-strong);
   border-radius: 0.75rem;
-  padding: 0.6rem 0.7rem;
+  min-height: 2.72rem;
 }
 
-.auth-form button,
-.auth-switch {
-  border: none;
-  border-radius: 0.75rem;
-  padding: 0.7rem 0.85rem;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.auth-form button {
-  background: var(--brand-main);
-  color: white;
+.auth-form .form-control:focus {
+  border-color: var(--brand-main);
+  box-shadow: 0 0 0 0.2rem rgba(10, 102, 255, 0.2);
 }
 
 .auth-switch {
   margin-top: 0.7rem;
   width: 100%;
-  background: var(--brand-soft);
 }
 
 .auth-error {
-  color: #8e2e18;
+  color: #a32031;
+  font-weight: 600;
 }

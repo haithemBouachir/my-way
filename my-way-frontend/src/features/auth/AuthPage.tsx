@@ -46,15 +46,21 @@ export function AuthPage() {
 
         <form onSubmit={submit} className="auth-form">
           {isRegister ? (
-            <label>
+            <label className="form-label">
               Full name
-              <input value={fullName} onChange={(event) => setFullName(event.target.value)} required />
+              <input
+                className="form-control"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                required
+              />
             </label>
           ) : null}
 
-          <label>
+          <label className="form-label">
             Email
             <input
+              className="form-control"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -62,9 +68,10 @@ export function AuthPage() {
             />
           </label>
 
-          <label>
+          <label className="form-label">
             Password
             <input
+              className="form-control"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -75,12 +82,14 @@ export function AuthPage() {
 
           {error ? <p className="auth-error">{error}</p> : null}
 
-          <button type="submit">{isRegister ? "Register" : "Login"}</button>
+          <button type="submit" className="btn btn-primary w-100">
+            {isRegister ? "Register" : "Login"}
+          </button>
         </form>
 
         <button
           type="button"
-          className="auth-switch"
+          className="auth-switch btn btn-outline-secondary"
           onClick={() => setIsRegister((current) => !current)}
         >
           {isRegister ? "Already have an account? Login" : "No account yet? Register"}

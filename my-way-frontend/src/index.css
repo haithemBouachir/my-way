@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
 :root {
   --bg: #edf3ff;
   --bg-alt: #dfe9fb;
@@ -6,10 +8,10 @@
   --text-main: #13223d;
   --text-primary: #13223d;
   --text-muted: #55627a;
-  --brand-main: #0a66ff;
+  --brand-main: #172234;
   --brand-soft: #dbe8ff;
   --brand-soft-2: #edf4ff;
-  --accent-strong: #0a66ff;
+  --accent-strong: #172234;
   --border-soft: #d8e2f4;
   --border-strong: #b7cae6;
   --shadow-soft: 0 16px 38px rgba(19, 34, 61, 0.11);
@@ -40,10 +42,11 @@ body,
 body {
   font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
   color: var(--text-main);
-  background:
+  /* background:
     radial-gradient(circle at 12% 12%, rgba(10, 102, 255, 0.14), transparent 42%),
     radial-gradient(circle at 88% 8%, rgba(88, 178, 255, 0.17), transparent 36%),
-    linear-gradient(180deg, var(--bg), var(--bg-alt));
+    linear-gradient(180deg, var(--bg), var(--bg-alt)); */
+      background-color: #f0f0f0;
   line-height: 1.45;
 }
 
@@ -163,13 +166,13 @@ button {
   transform: translateY(-1px);
 }
 
-.panel-form button:not(.secondary):not(.danger),
+/* .panel-form button:not(.secondary):not(.danger),
 .panel button:not(.secondary):not(.danger):not(.topnav-avatar-trigger):not(.topnav-link),
 .btn-primary {
-  background: linear-gradient(135deg, #0a66ff, #0057e0);
+  background: linear-gradient(135deg, #172234, #0057e0);
   color: #fff;
   box-shadow: 0 10px 22px rgba(10, 102, 255, 0.23);
-}
+} */
 
 .secondary,
 .btn-outline-secondary {
@@ -191,17 +194,6 @@ button:disabled,
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-.panel-form button,
-.panel button {
-  transition: transform 150ms ease, opacity 150ms ease;
-}
-
-.panel-form button:hover,
-.panel button:hover {
-  transform: translateY(-1px);
-  opacity: 0.95;
 }
 
 @media (max-width: 900px) {
