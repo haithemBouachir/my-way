@@ -36,7 +36,7 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-resource "aws_security_group" "solyntek_sg" {
+resource "aws_security_group" "app_sg" {
   name        = "${var.project_name}-security-group"
   description = "Allow SSH, HTTP and HTTPS access"
   vpc_id      = data.aws_vpc.default.id
@@ -77,11 +77,11 @@ resource "aws_security_group" "solyntek_sg" {
   )
 }
 
-resource "aws_instance" "solyntek" {
+resource "aws_instance" "app" {
   ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   key_name                    = var.key_name
-  vpc_security_group_ids      = [aws_security_group.solyntek_sg.id]
+  vpc_security_group_ids      = [aws_security_group.app_sg.id]
   associate_public_ip_address = true
 
   root_block_device {
