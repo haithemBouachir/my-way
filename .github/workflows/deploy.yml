@@ -6,7 +6,7 @@ on:
     branches: ["main"]
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   infra:
@@ -17,21 +17,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Configure AWS credentials (long-lived keys)
-        if: ${{ secrets.AWS_SESSION_TOKEN == '' }}
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Configure AWS credentials (temporary session)
-        if: ${{ secrets.AWS_SESSION_TOKEN != '' }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
       - name: Setup Terraform
