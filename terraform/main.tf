@@ -91,9 +91,7 @@ resource "aws_security_group" "app_sg" {
 }
 
 locals {
-  app_security_group_id = length(data.aws_security_groups.existing_app_sg.ids) > 0
-    ? data.aws_security_groups.existing_app_sg.ids[0]
-    : aws_security_group.app_sg[0].id
+  app_security_group_id = length(data.aws_security_groups.existing_app_sg.ids) > 0 ? data.aws_security_groups.existing_app_sg.ids[0] : aws_security_group.app_sg[0].id
 }
 
 resource "aws_instance" "app" {
