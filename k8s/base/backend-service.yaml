@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-way-backend
+  namespace: my-way
+  labels:
+    app: my-way-backend
+spec:
+  selector:
+    app: my-way-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

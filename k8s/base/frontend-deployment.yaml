@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-way-frontend
+  namespace: my-way
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-way-frontend
+  template:
+    metadata:
+      labels:
+        app: my-way-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/REPLACE_ME_OWNER/my-way-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi

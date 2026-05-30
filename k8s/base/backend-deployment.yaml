@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-way-backend
+  namespace: my-way
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-way-backend
+  template:
+    metadata:
+      labels:
+        app: my-way-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/REPLACE_ME_OWNER/my-way-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: DB_URL
+              value: jdbc:mysql://mysql:3306/myway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: my-way-mysql-secret
+                  key: MYSQL_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: my-way-mysql-secret
+                  key: MYSQL_PASSWORD
+            - name: DB_DRIVER
+              value: com.mysql.cj.jdbc.Driver
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-way-app-secret
+                  key: JWT_SECRET
+            - name: CORS_ALLOWED_ORIGINS
+              value: "*"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 40
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 200m
+              memory: 384Mi
+            limits:
+              cpu: 800m
+              memory: 1Gi
