@@ -76,6 +76,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Prepare lightweight transfer bundle
+        run: |
+          rm -rf my-way-frontend/node_modules my-way-frontend/dist my-way-backend/target
+          find my-way-frontend my-way-backend -type d -name ".cache" -prune -exec rm -rf {} + || true
+          echo "Transfer sizes after cleanup:"
+          du -sh my-way-backend my-way-frontend docker-compose.yml
+
       - name: Copy project files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
