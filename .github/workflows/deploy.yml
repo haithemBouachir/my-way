@@ -7,8 +7,6 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE || 'my_way' }}
-  MYSQL_USER: ${{ vars.MYSQL_USER || 'my_way_user' }}
 
 jobs:
   build:
@@ -89,6 +87,8 @@ jobs:
             export GIT_TERMINAL_PROMPT=0
 
             HOST='${{ needs.build.outputs.ec2_ip }}'
+            MYSQL_DATABASE='${{ vars.MYSQL_DATABASE || 'my_way' }}'
+            MYSQL_USER='${{ vars.MYSQL_USER || 'my_way_user' }}'
             MYSQL_PASSWORD='${{ secrets.MYSQL_PASSWORD }}'
             MYSQL_ROOT_PASSWORD='${{ secrets.MYSQL_ROOT_PASSWORD }}'
             JWT_SECRET='${{ secrets.JWT_SECRET }}'
