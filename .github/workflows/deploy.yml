@@ -81,8 +81,10 @@ jobs:
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           timeout: 60s
           command_timeout: 40m
+          debug: true
           script: |
             set -euxo pipefail
+            export GIT_TERMINAL_PROMPT=0
 
             echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting remote deploy"
 
@@ -108,12 +110,14 @@ jobs:
             echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Syncing repository"
             cd /home/ubuntu
             if [ ! -d /home/ubuntu/my-way/.git ]; then
-              GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/${{ github.repository }}.git /home/ubuntu/my-way
+              git clone --depth 1 https://github.com/${{ github.repository }}.git /home/ubuntu/my-way
             fi
 
             cd /home/ubuntu/my-way
-            GIT_TERMINAL_PROMPT=0 git remote -v
-            git fetch --all --prune
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Repository remotes"
+            git remote -v
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Fetch latest commit"
+            git -c credential.helper= -c core.askPass=true fetch --all --prune
             git reset --hard origin/${{ github.ref_name }}
 
             echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Writing runtime env"
