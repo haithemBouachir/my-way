@@ -79,35 +79,44 @@ jobs:
           host: ${{ needs.build.outputs.ec2_ip }}
           username: ubuntu
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          timeout: 60s
+          command_timeout: 40m
           script: |
-            set -e
+            set -euxo pipefail
+
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting remote deploy"
 
             if ! command -v docker >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y ca-certificates curl gnupg
+              echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Installing Docker"
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg
               sudo install -m 0755 -d /etc/apt/keyrings
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
               sudo chmod a+r /etc/apt/keyrings/docker.gpg
               echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-              sudo apt-get update
-              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
               sudo usermod -aG docker ubuntu
             fi
 
             if ! command -v git >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y git
+              echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Installing git"
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
             fi
 
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Syncing repository"
             cd /home/ubuntu
             if [ ! -d /home/ubuntu/my-way/.git ]; then
-              git clone https://github.com/${{ github.repository }}.git /home/ubuntu/my-way
+              GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/${{ github.repository }}.git /home/ubuntu/my-way
             fi
 
             cd /home/ubuntu/my-way
+            GIT_TERMINAL_PROMPT=0 git remote -v
             git fetch --all --prune
             git reset --hard origin/${{ github.ref_name }}
 
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Writing runtime env"
             cat > /home/ubuntu/my-way/.env << 'EOF'
             MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
             MYSQL_USER=${{ secrets.MYSQL_USER }}
@@ -119,7 +128,14 @@ jobs:
             CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
             EOF
 
-            sudo docker compose --env-file .env up -d --build
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Docker compose build"
+            sudo docker compose --env-file .env build --progress=plain
+
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Docker compose up"
+            sudo docker compose --env-file .env up -d --no-build
+
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Docker compose status"
+            sudo docker compose --env-file .env ps
 
       - name: Show final app URL
         run: |
