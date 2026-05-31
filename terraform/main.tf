@@ -17,17 +17,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_iam_policy_document" "ec2_assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
 data "aws_vpc" "default" {
   default = true
 }
@@ -88,33 +77,10 @@ resource "aws_security_group" "app_sg" {
   )
 }
 
-resource "aws_iam_role" "ec2_ssm_role" {
-  name_prefix        = "${var.project_name}-ec2-ssm-"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
-
-  tags = merge(
-    {
-      Name = "${var.project_name}-ec2-ssm-role"
-    },
-    var.tags
-  )
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_ssm_core" {
-  role       = aws_iam_role.ec2_ssm_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "ec2_ssm_profile" {
-  name_prefix = "${var.project_name}-ec2-profile-"
-  role        = aws_iam_role.ec2_ssm_role.name
-}
-
 resource "aws_instance" "app" {
   ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   key_name                    = var.key_name
-  iam_instance_profile        = aws_iam_instance_profile.ec2_ssm_profile.name
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
   associate_public_ip_address = true
 
