@@ -131,3 +131,44 @@ jobs:
           echo "App URL: http://${{ needs.infra.outputs.ec2_ip }}"
           echo "### Final App URL" >> "$GITHUB_STEP_SUMMARY"
           echo "http://${{ needs.infra.outputs.ec2_ip }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify backend health endpoint
+        id: healthcheck
+        continue-on-error: true
+        run: |
+          set -e
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "http://${{ needs.infra.outputs.ec2_ip }}/api/v1/health" || true)
+            echo "Attempt $i HTTP=$code"
+            if [ "$code" = "200" ]; then
+              echo "Backend health is OK"
+              cat /tmp/health.json || true
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Backend health check failed"
+          exit 1
+
+      - name: Collect remote docker diagnostics
+        if: steps.healthcheck.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ needs.infra.outputs.ec2_ip }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          script: |
+            set +e
+            cd /home/ubuntu/my-way
+            echo "=== docker compose ps ==="
+            sudo docker compose ps
+            echo "=== backend logs (last 200) ==="
+            sudo docker compose logs --tail=200 backend
+            echo "=== mysql logs (last 200) ==="
+            sudo docker compose logs --tail=200 mysql
+
+      - name: Fail workflow when backend unhealthy
+        if: steps.healthcheck.outcome == 'failure'
+        run: |
+          echo "Backend health endpoint is not reachable after deploy. Check diagnostics above."
+          exit 1
