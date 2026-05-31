@@ -7,6 +7,8 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE || 'my_way' }}
+  MYSQL_USER: ${{ vars.MYSQL_USER || 'my_way_user' }}
 
 jobs:
   build:
@@ -86,15 +88,18 @@ jobs:
             set -euxo pipefail
             export GIT_TERMINAL_PROMPT=0
 
-            MYSQL_DATABASE='${{ secrets.MYSQL_DATABASE }}'
-            MYSQL_USER='${{ secrets.MYSQL_USER }}'
+            HOST='${{ needs.build.outputs.ec2_ip }}'
             MYSQL_PASSWORD='${{ secrets.MYSQL_PASSWORD }}'
             MYSQL_ROOT_PASSWORD='${{ secrets.MYSQL_ROOT_PASSWORD }}'
             JWT_SECRET='${{ secrets.JWT_SECRET }}'
-            CORS_ALLOWED_ORIGINS='${{ secrets.CORS_ALLOWED_ORIGINS }}'
+            CORS_ALLOWED_ORIGINS='${{ vars.CORS_ALLOWED_ORIGINS }}'
+
+            if [ -z "$CORS_ALLOWED_ORIGINS" ]; then
+              CORS_ALLOWED_ORIGINS="http://${HOST},http://localhost:5173"
+            fi
 
             missing_secrets=""
-            for secret_name in MYSQL_DATABASE MYSQL_USER MYSQL_PASSWORD MYSQL_ROOT_PASSWORD JWT_SECRET CORS_ALLOWED_ORIGINS; do
+            for secret_name in MYSQL_PASSWORD MYSQL_ROOT_PASSWORD JWT_SECRET; do
               if [ -z "$(eval echo \$$secret_name)" ]; then
                 missing_secrets="$missing_secrets $secret_name"
               fi
@@ -141,8 +146,8 @@ jobs:
 
             echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Writing runtime env"
             {
-              printf '%s\n' "MYSQL_DATABASE=$MYSQL_DATABASE"
-              printf '%s\n' "MYSQL_USER=$MYSQL_USER"
+              printf '%s\n' "MYSQL_DATABASE=${MYSQL_DATABASE}"
+              printf '%s\n' "MYSQL_USER=${MYSQL_USER}"
               printf '%s\n' "MYSQL_PASSWORD=$MYSQL_PASSWORD"
               printf '%s\n' "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD"
               printf '%s\n' "JWT_SECRET=$JWT_SECRET"
