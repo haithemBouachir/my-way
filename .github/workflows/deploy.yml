@@ -179,20 +179,25 @@ jobs:
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           timeout: 120s
           command_timeout: 15m
+          debug: true
           script: |
             set -euo pipefail
             export GIT_TERMINAL_PROMPT=0
 
             echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Installing Docker if needed"
             if ! command -v docker >/dev/null 2>&1; then
-              sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
-              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ca-certificates curl gnupg
+              echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get update"
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update
+              echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get install base packages"
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg
               sudo install -m 0755 -d /etc/apt/keyrings
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
               sudo chmod a+r /etc/apt/keyrings/docker.gpg
               echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-              sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
-              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin git
+              echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get update (docker repo)"
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update
+              echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get install docker + git"
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin git
               sudo usermod -aG docker ubuntu
             fi
 
