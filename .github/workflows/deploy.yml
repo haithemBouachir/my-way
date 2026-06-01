@@ -156,89 +156,79 @@ jobs:
               --output table
           done
 
-      - name: Prepare SSH key
+      - name: Wait for EC2 SSH to be ready
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s' '${{ secrets.AWS_SSH_PRIVATE_KEY }}' > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          echo "Waiting for SSH on ${{ needs.infra.outputs.ec2_ip }}:22 ..."
+          for i in $(seq 1 30); do
+            if timeout 5 bash -lc "</dev/tcp/${{ needs.infra.outputs.ec2_ip }}/22" 2>/dev/null; then
+              echo "SSH is ready (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/30 - not ready, waiting 10s..."
+            sleep 10
+          done
+          echo "EC2 SSH did not become ready in 5 minutes"
+          exit 1
 
       - name: Deploy with Docker Compose
-        run: |
-          set -euo pipefail
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ needs.infra.outputs.ec2_ip }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          timeout: 120s
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
+            export GIT_TERMINAL_PROMPT=0
 
-          HOST='${{ needs.infra.outputs.ec2_ip }}'
-          SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
-
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Validating SSH handshake"
-          for i in $(seq 1 10); do
-            if ssh $SSH_OPTS ubuntu@"$HOST" "echo SSH_READY" >/dev/null 2>&1; then
-              echo "SSH handshake OK (attempt $i)"
-              break
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Installing Docker if needed"
+            if ! command -v docker >/dev/null 2>&1; then
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ca-certificates curl gnupg
+              sudo install -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              sudo chmod a+r /etc/apt/keyrings/docker.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+              sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin git
+              sudo usermod -aG docker ubuntu
             fi
-            if [ "$i" -eq 10 ]; then
-              echo "SSH handshake failed after 10 attempts"
-              exit 1
+
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Syncing repo for compose file"
+            if [ ! -d /opt/my-way/.git ]; then
+              sudo git clone --depth 1 https://github.com/${{ github.repository }}.git /opt/my-way
+            else
+              sudo git -C /opt/my-way fetch --all --prune
+              sudo git -C /opt/my-way reset --hard origin/${{ github.ref_name }}
             fi
-            echo "SSH handshake attempt $i failed, retrying in 15s..."
-            sleep 15
-          done
 
-          ssh $SSH_OPTS ubuntu@"$HOST" 'bash -s' <<'REMOTE_SCRIPT'
-          set -euo pipefail
-          export GIT_TERMINAL_PROMPT=0
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Logging in to GHCR"
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Installing Docker if needed"
-          if ! command -v docker >/dev/null 2>&1; then
-            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get update"
-            sudo DEBIAN_FRONTEND=noninteractive apt-get update
-            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get install base packages"
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg
-            sudo install -m 0755 -d /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-            sudo chmod a+r /etc/apt/keyrings/docker.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get update (docker repo)"
-            sudo DEBIAN_FRONTEND=noninteractive apt-get update
-            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] apt-get install docker + git"
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin git
-            sudo usermod -aG docker ubuntu
-          fi
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Writing runtime env"
+            {
+              printf '%s\n' "MYSQL_DATABASE=my_way"
+              printf '%s\n' "MYSQL_USER=my_way_user"
+              printf '%s\n' "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}"
+              printf '%s\n' "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}"
+              printf '%s\n' "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+              printf '%s\n' "JWT_EXPIRATION_SECONDS=86400"
+              printf '%s\n' "VITE_API_BASE_URL=/api/v1"
+              printf '%s\n' "CORS_ALLOWED_ORIGINS=http://${{ needs.infra.outputs.ec2_ip }},http://localhost:5173"
+              printf '%s\n' "BACKEND_IMAGE=ghcr.io/haithembouachir/my-way-backend:${{ github.sha }}"
+              printf '%s\n' "FRONTEND_IMAGE=ghcr.io/haithembouachir/my-way-frontend:${{ github.sha }}"
+            } | sudo tee /opt/my-way/.env > /dev/null
 
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Syncing repo for compose file"
-          if [ ! -d /opt/my-way/.git ]; then
-            sudo git clone --depth 1 https://github.com/${{ github.repository }}.git /opt/my-way
-          else
-            sudo git -C /opt/my-way fetch --all --prune
-            sudo git -C /opt/my-way reset --hard origin/${{ github.ref_name }}
-          fi
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Pulling images"
+            sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml pull
 
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Logging in to GHCR"
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting containers"
+            sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml up -d
 
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Writing runtime env"
-          {
-            printf '%s\n' "MYSQL_DATABASE=my_way"
-            printf '%s\n' "MYSQL_USER=my_way_user"
-            printf '%s\n' "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}"
-            printf '%s\n' "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}"
-            printf '%s\n' "JWT_SECRET=${{ secrets.JWT_SECRET }}"
-            printf '%s\n' "JWT_EXPIRATION_SECONDS=86400"
-            printf '%s\n' "VITE_API_BASE_URL=/api/v1"
-            printf '%s\n' "CORS_ALLOWED_ORIGINS=http://${{ needs.infra.outputs.ec2_ip }},http://localhost:5173"
-            printf '%s\n' "BACKEND_IMAGE=ghcr.io/haithembouachir/my-way-backend:${{ github.sha }}"
-            printf '%s\n' "FRONTEND_IMAGE=ghcr.io/haithembouachir/my-way-frontend:${{ github.sha }}"
-          } | sudo tee /opt/my-way/.env > /dev/null
-
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Pulling images"
-          sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml pull
-
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting containers"
-          sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml up -d
-
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Container status"
-          sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml ps
-          REMOTE_SCRIPT
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Container status"
+            sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml ps
 
       - name: Show final app URL
         run: |
@@ -252,11 +242,7 @@ jobs:
         run: |
           set -e
           for i in $(seq 1 12); do
-            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Health attempt $i/12"
-            code=$(curl --connect-timeout 5 --max-time 10 -s -o /tmp/health.json -w "%{http_code}" "http://${{ needs.infra.outputs.ec2_ip }}/api/v1/health" || true)
-            if [ -z "$code" ]; then
-              code="000"
-            fi
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "http://${{ needs.infra.outputs.ec2_ip }}/api/v1/health" || true)
             echo "Attempt $i HTTP=$code"
             if [ "$code" = "200" ]; then
               echo "Backend health is OK"
@@ -270,20 +256,20 @@ jobs:
 
       - name: Collect remote docker diagnostics
         if: steps.healthcheck.outcome == 'failure'
-        run: |
-          set +e
-          HOST='${{ needs.infra.outputs.ec2_ip }}'
-          SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
-          ssh $SSH_OPTS ubuntu@"$HOST" 'bash -s' <<'REMOTE_DIAG'
-          set +e
-          cd /opt/my-way
-          echo "=== docker compose ps ==="
-          sudo docker compose -f docker-compose.prod.yml ps
-          echo "=== backend logs (last 200) ==="
-          sudo docker compose -f docker-compose.prod.yml logs --tail=200 backend
-          echo "=== mysql logs (last 200) ==="
-          sudo docker compose -f docker-compose.prod.yml logs --tail=200 mysql
-          REMOTE_DIAG
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ needs.infra.outputs.ec2_ip }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          script: |
+            set +e
+            cd /opt/my-way
+            echo "=== docker compose ps ==="
+            sudo docker compose -f docker-compose.prod.yml ps
+            echo "=== backend logs (last 200) ==="
+            sudo docker compose -f docker-compose.prod.yml logs --tail=200 backend
+            echo "=== mysql logs (last 200) ==="
+            sudo docker compose -f docker-compose.prod.yml logs --tail=200 mysql
 
       - name: Fail workflow when backend unhealthy
         if: steps.healthcheck.outcome == 'failure'
