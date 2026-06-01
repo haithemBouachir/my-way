@@ -242,7 +242,11 @@ jobs:
         run: |
           set -e
           for i in $(seq 1 12); do
-            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "http://${{ needs.infra.outputs.ec2_ip }}/api/v1/health" || true)
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Health attempt $i/12"
+            code=$(curl --connect-timeout 5 --max-time 10 -s -o /tmp/health.json -w "%{http_code}" "http://${{ needs.infra.outputs.ec2_ip }}/api/v1/health" || true)
+            if [ -z "$code" ]; then
+              code="000"
+            fi
             echo "Attempt $i HTTP=$code"
             if [ "$code" = "200" ]; then
               echo "Backend health is OK"
