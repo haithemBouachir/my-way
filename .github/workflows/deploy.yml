@@ -168,19 +168,19 @@ jobs:
           set -euo pipefail
 
           HOST='${{ needs.infra.outputs.ec2_ip }}'
-          SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
+          SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Validating SSH handshake"
-          for i in $(seq 1 10); do
+          for i in $(seq 1 20); do
             if ssh $SSH_OPTS ubuntu@"$HOST" "echo SSH_READY" >/dev/null 2>&1; then
               echo "SSH handshake OK (attempt $i)"
               break
             fi
-            if [ "$i" -eq 10 ]; then
-              echo "SSH handshake failed after 10 attempts"
+            if [ "$i" -eq 20 ]; then
+              echo "SSH handshake failed after 20 attempts"
               exit 1
             fi
-            echo "SSH handshake attempt $i failed, retrying in 15s..."
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] SSH handshake attempt $i failed, retrying in 15s..."
             sleep 15
           done
 
@@ -265,7 +265,7 @@ jobs:
         run: |
           set +e
           HOST='${{ needs.infra.outputs.ec2_ip }}'
-          SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
+          SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
           ssh $SSH_OPTS ubuntu@"$HOST" 'bash -s' <<'REMOTE_DIAG'
           set +e
           cd /opt/my-way
