@@ -167,7 +167,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          HOST='${{ needs.infra.outputs.ec2_ip }}'
+          HOST=$(aws ec2 describe-instances \
+            --instance-ids '${{ needs.infra.outputs.ec2_instance_id }}' \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "Deploy target host: $HOST"
           SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Validating SSH handshake"
@@ -264,7 +268,10 @@ jobs:
         if: steps.healthcheck.outcome == 'failure'
         run: |
           set +e
-          HOST='${{ needs.infra.outputs.ec2_ip }}'
+          HOST=$(aws ec2 describe-instances \
+            --instance-ids '${{ needs.infra.outputs.ec2_instance_id }}' \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
           SSH_OPTS='-i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
           ssh $SSH_OPTS ubuntu@"$HOST" 'bash -s' <<'REMOTE_DIAG'
           set +e
