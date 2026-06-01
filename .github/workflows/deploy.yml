@@ -156,21 +156,6 @@ jobs:
               --output table
           done
 
-      - name: Wait for EC2 SSH to be ready
-        run: |
-          set -euo pipefail
-          echo "Waiting for SSH on ${{ needs.infra.outputs.ec2_ip }}:22 ..."
-          for i in $(seq 1 30); do
-            if timeout 5 bash -lc "</dev/tcp/${{ needs.infra.outputs.ec2_ip }}/22" 2>/dev/null; then
-              echo "SSH is ready (attempt $i)"
-              exit 0
-            fi
-            echo "Attempt $i/30 - not ready, waiting 10s..."
-            sleep 10
-          done
-          echo "EC2 SSH did not become ready in 5 minutes"
-          exit 1
-
       - name: Prepare SSH key
         run: |
           set -euo pipefail
