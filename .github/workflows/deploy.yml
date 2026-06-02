@@ -333,6 +333,27 @@ jobs:
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Container status"
           sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml ps
+
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for backend internal health"
+          backend_ok=false
+          for i in $(seq 1 30); do
+            code=$(sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -s -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
+            echo "Internal backend health attempt $i/30 HTTP=$code"
+            if [ "$code" = "200" ]; then
+              backend_ok=true
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$backend_ok" != true ]; then
+            echo "Backend internal health did not become ready in time"
+            echo "=== backend logs (last 200) ==="
+            sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml logs --tail=200 backend || true
+            echo "=== mysql logs (last 200) ==="
+            sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml logs --tail=200 mysql || true
+            exit 1
+          fi
           REMOTE_SCRIPT
 
           ssh -i ~/.ssh/deploy_key \
