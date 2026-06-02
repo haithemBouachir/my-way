@@ -341,7 +341,7 @@ jobs:
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=20 \
             -o StrictHostKeyChecking=no \
-            ubuntu@${DEPLOY_HOST} 'bash -se' < /tmp/deploy_remote.sh
+            ubuntu@${DEPLOY_HOST} "DEPLOY_HOST='${DEPLOY_HOST}' bash -se" < /tmp/deploy_remote.sh
 
       - name: Show final app URL
         run: |
