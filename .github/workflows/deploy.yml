@@ -156,22 +156,58 @@ jobs:
               --output table
           done
 
+      - name: Wait for EC2 instance status checks
+        run: |
+          set -euo pipefail
+          INSTANCE_ID="${{ needs.infra.outputs.ec2_instance_id }}"
+          echo "Waiting for EC2 status checks to pass for $INSTANCE_ID ..."
+          aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+          aws ec2 describe-instance-status \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'InstanceStatuses[0].{State:InstanceState.Name,System:SystemStatus.Status,Instance:InstanceStatus.Status}' \
+            --output table
+
       - name: Wait for EC2 SSH to be ready
         run: |
           set -euo pipefail
+          INSTANCE_ID="${{ needs.infra.outputs.ec2_instance_id }}"
           host="${{ needs.infra.outputs.ec2_ip }}"
+
+          check_banner() {
+            timeout 6 bash -lc "exec 3<>/dev/tcp/$host/22; head -n 1 <&3" 2>/dev/null || true
+          }
+
+          wait_banner_loop() {
+            local attempts="$1"
+            local wait_s="$2"
+            for i in $(seq 1 "$attempts"); do
+              banner=$(check_banner)
+              echo "Attempt $i/$attempts banner='${banner:-<none>}'"
+              if echo "$banner" | grep -q '^SSH-2.0-'; then
+                echo "SSH banner is ready (attempt $i)"
+                return 0
+              fi
+              echo "Banner not ready yet, waiting ${wait_s}s..."
+              sleep "$wait_s"
+            done
+            return 1
+          }
+
           echo "Waiting for SSH banner on $host:22 ..."
-          for i in $(seq 1 40); do
-            banner=$(timeout 6 bash -lc "exec 3<>/dev/tcp/$host/22; head -n 1 <&3" 2>/dev/null || true)
-            echo "Attempt $i/40 banner='${banner:-<none>}'"
-            if echo "$banner" | grep -q '^SSH-2.0-'; then
-              echo "SSH banner is ready (attempt $i)"
-              exit 0
-            fi
-            echo "Banner not ready yet, waiting 10s..."
-            sleep 10
-          done
-          echo "EC2 SSH banner did not become ready in time"
+          if wait_banner_loop 24 10; then
+            exit 0
+          fi
+
+          echo "SSH banner not available, rebooting instance to self-heal sshd"
+          aws ec2 reboot-instances --instance-ids "$INSTANCE_ID"
+          aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+
+          echo "Retrying SSH banner wait after reboot"
+          if wait_banner_loop 24 10; then
+            exit 0
+          fi
+
+          echo "EC2 SSH banner did not become ready even after reboot"
           exit 1
 
       - name: Runner native SSH handshake diagnostics
