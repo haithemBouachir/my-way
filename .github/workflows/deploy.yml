@@ -241,14 +241,19 @@ jobs:
         continue-on-error: true
         run: |
           set -e
-          for i in $(seq 1 12); do
-            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "http://${{ needs.infra.outputs.ec2_ip }}/api/v1/health" || true)
-            echo "Attempt $i HTTP=$code"
+          url="http://${{ needs.infra.outputs.ec2_ip }}/api/v1/health"
+          for i in $(seq 1 24); do
+            code=$(curl -sS -D /tmp/health.headers -o /tmp/health.body -w "%{http_code}" "$url" || true)
+            echo "Attempt $i HTTP=$code URL=$url"
             if [ "$code" = "200" ]; then
               echo "Backend health is OK"
-              cat /tmp/health.json || true
+              cat /tmp/health.body || true
               exit 0
             fi
+            echo "Response headers (attempt $i):"
+            sed -n '1,20p' /tmp/health.headers || true
+            echo "Response body preview (attempt $i):"
+            sed -n '1,60p' /tmp/health.body || true
             sleep 10
           done
           echo "Backend health check failed"
@@ -266,10 +271,20 @@ jobs:
             cd /opt/my-way
             echo "=== docker compose ps ==="
             sudo docker compose -f docker-compose.prod.yml ps
+            echo "=== docker compose ps (all) ==="
+            sudo docker compose -f docker-compose.prod.yml ps -a
             echo "=== backend logs (last 200) ==="
             sudo docker compose -f docker-compose.prod.yml logs --tail=200 backend
             echo "=== mysql logs (last 200) ==="
             sudo docker compose -f docker-compose.prod.yml logs --tail=200 mysql
+            echo "=== frontend logs (last 200) ==="
+            sudo docker compose -f docker-compose.prod.yml logs --tail=200 frontend
+            echo "=== frontend nginx config ==="
+            sudo docker exec myway-frontend nginx -T | sed -n '1,220p'
+            echo "=== direct backend health from Docker network ==="
+            sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -sS -i http://backend:8080/api/v1/health
+            echo "=== frontend->backend health via nginx inside Docker network ==="
+            sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -sS -i http://frontend/api/v1/health
 
       - name: Fail workflow when backend unhealthy
         if: steps.healthcheck.outcome == 'failure'
