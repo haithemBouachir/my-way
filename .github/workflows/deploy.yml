@@ -231,7 +231,7 @@ jobs:
               --query 'InstanceStatuses[0].[SystemStatus.Status,InstanceStatus.Status]' \
               --output text 2>/dev/null || true)
             echo "Status attempt $i/30: ${status:-<none>}"
-            if [ "$status" = "ok\tok" ] || [ "$status" = "ok ok" ]; then
+            if echo "$status" | grep -Eq '^ok[[:space:]]+ok$'; then
               status_ok=true
               break
             fi
