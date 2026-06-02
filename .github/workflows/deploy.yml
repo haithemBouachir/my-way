@@ -208,23 +208,13 @@ jobs:
             exit 0
           fi
 
-          echo "SSH banner not available, rebooting instance to self-heal sshd"
-          aws ec2 reboot-instances --instance-ids "$INSTANCE_ID"
-          aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
-
-          echo "Retrying SSH banner wait after reboot"
-          if wait_banner_loop "$host" 8 10; then
-            echo "DEPLOY_HOST=$host" >> "$GITHUB_ENV"
-            exit 0
-          fi
-
-          echo "SSH banner still unavailable. Replacing EC2 instance via Terraform fallback..."
+          echo "SSH banner unavailable. Replacing EC2 instance via Terraform fallback..."
           terraform -chdir=terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="key=my-way/terraform.tfstate" \
             -backend-config="region=us-east-1"
 
-          terraform -chdir=terraform apply -auto-approve \
+          timeout 1800 terraform -chdir=terraform apply -auto-approve \
             -replace=aws_instance.app \
             -var "key_name=${{ secrets.AWS_EC2_KEY_NAME }}"
 
@@ -232,7 +222,26 @@ jobs:
           NEW_HOST=$(terraform -chdir=terraform output -raw instance_public_ip)
           echo "Fallback instance id: $NEW_INSTANCE_ID"
           echo "Fallback host: $NEW_HOST"
-          aws ec2 wait instance-status-ok --instance-ids "$NEW_INSTANCE_ID"
+
+          echo "Waiting for fallback instance status checks with bounded retries"
+          status_ok=false
+          for i in $(seq 1 30); do
+            status=$(aws ec2 describe-instance-status \
+              --instance-ids "$NEW_INSTANCE_ID" \
+              --query 'InstanceStatuses[0].[SystemStatus.Status,InstanceStatus.Status]' \
+              --output text 2>/dev/null || true)
+            echo "Status attempt $i/30: ${status:-<none>}"
+            if [ "$status" = "ok\tok" ] || [ "$status" = "ok ok" ]; then
+              status_ok=true
+              break
+            fi
+            sleep 10
+          done
+
+          if [ "$status_ok" != true ]; then
+            echo "Fallback instance status checks did not reach ok/ok in time"
+            exit 1
+          fi
 
           echo "Retrying SSH banner wait on fallback host"
           if wait_banner_loop "$NEW_HOST" 12 10; then
