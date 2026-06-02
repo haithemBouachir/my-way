@@ -171,14 +171,38 @@ jobs:
           echo "EC2 SSH did not become ready in 5 minutes"
           exit 1
 
+      - name: Runner native SSH handshake diagnostics
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -H "${{ needs.infra.outputs.ec2_ip }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          for i in $(seq 1 3); do
+            echo "Runner handshake attempt $i"
+            ssh -vvv -i ~/.ssh/deploy_key \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              -o StrictHostKeyChecking=no \
+              ubuntu@${{ needs.infra.outputs.ec2_ip }} "echo runner-ssh-ok" && exit 0
+            sleep 5
+          done
+
+          echo "Runner native SSH handshake failed after 3 attempts"
+          exit 1
+
       - name: Deploy with Docker Compose
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ needs.infra.outputs.ec2_ip }}
           username: ubuntu
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          timeout: 120s
+          timeout: 300s
           command_timeout: 15m
+          debug: true
           script: |
             set -euo pipefail
             export GIT_TERMINAL_PROMPT=0
