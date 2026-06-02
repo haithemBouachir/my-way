@@ -21,10 +21,20 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_internet_gateway" "default" {
+data "aws_subnet" "default_public" {
   filter {
-    name   = "attachment.vpc-id"
+    name   = "vpc-id"
     values = [data.aws_vpc.default.id]
+  }
+
+  filter {
+    name   = "availability-zone"
+    values = [data.aws_availability_zones.available.names[0]]
+  }
+
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
   }
 }
 
@@ -88,46 +98,11 @@ resource "aws_security_group" "app_sg" {
   )
 }
 
-resource "aws_subnet" "public" {
-  vpc_id                  = data.aws_vpc.default.id
-  availability_zone       = data.aws_availability_zones.available.names[0]
-  cidr_block              = cidrsubnet(data.aws_vpc.default.cidr_block, 8, 10)
-  map_public_ip_on_launch = true
-
-  tags = merge(
-    {
-      Name = "${var.project_name}-public-subnet"
-    },
-    var.tags
-  )
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = data.aws_vpc.default.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = data.aws_internet_gateway.default.id
-  }
-
-  tags = merge(
-    {
-      Name = "${var.project_name}-public-rt"
-    },
-    var.tags
-  )
-}
-
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
-}
-
 resource "aws_instance" "app" {
   ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   key_name                    = var.key_name
-  subnet_id                   = aws_subnet.public.id
+  subnet_id                   = data.aws_subnet.default_public.id
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
   associate_public_ip_address = true
 
