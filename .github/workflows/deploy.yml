@@ -203,7 +203,7 @@ jobs:
           }
 
           echo "Waiting for SSH banner on $host:22 ..."
-          if wait_banner_loop "$host" 24 10; then
+          if wait_banner_loop "$host" 8 10; then
             echo "DEPLOY_HOST=$host" >> "$GITHUB_ENV"
             exit 0
           fi
@@ -213,7 +213,7 @@ jobs:
           aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
 
           echo "Retrying SSH banner wait after reboot"
-          if wait_banner_loop "$host" 24 10; then
+          if wait_banner_loop "$host" 8 10; then
             echo "DEPLOY_HOST=$host" >> "$GITHUB_ENV"
             exit 0
           fi
@@ -235,7 +235,7 @@ jobs:
           aws ec2 wait instance-status-ok --instance-ids "$NEW_INSTANCE_ID"
 
           echo "Retrying SSH banner wait on fallback host"
-          if wait_banner_loop "$NEW_HOST" 24 10; then
+          if wait_banner_loop "$NEW_HOST" 12 10; then
             echo "DEPLOY_HOST=$NEW_HOST" >> "$GITHUB_ENV"
             exit 0
           fi
