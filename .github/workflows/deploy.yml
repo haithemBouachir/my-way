@@ -262,17 +262,20 @@ jobs:
 
           ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-          for i in $(seq 1 3); do
+          for i in $(seq 1 6); do
             echo "Runner handshake attempt $i"
-            ssh -vvv -i ~/.ssh/deploy_key \
+            ssh -v -i ~/.ssh/deploy_key \
               -o BatchMode=yes \
-              -o ConnectTimeout=20 \
+              -o ConnectTimeout=40 \
+              -o ConnectionAttempts=3 \
+              -o ServerAliveInterval=10 \
+              -o ServerAliveCountMax=6 \
               -o StrictHostKeyChecking=no \
               ubuntu@${DEPLOY_HOST} "echo runner-ssh-ok" && exit 0
-            sleep 5
+            sleep 10
           done
 
-          echo "Runner native SSH handshake failed after 3 attempts"
+          echo "Runner native SSH handshake failed after 6 attempts"
           exit 1
 
       - name: Deploy with Docker Compose
@@ -282,6 +285,29 @@ jobs:
           printf '%s\n' "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for SSH command readiness"
+          ssh_ready=false
+          for i in $(seq 1 8); do
+            echo "SSH command readiness attempt $i/8"
+            if ssh -i ~/.ssh/deploy_key \
+              -o BatchMode=yes \
+              -o ConnectTimeout=40 \
+              -o ConnectionAttempts=3 \
+              -o ServerAliveInterval=10 \
+              -o ServerAliveCountMax=6 \
+              -o StrictHostKeyChecking=no \
+              ubuntu@${DEPLOY_HOST} "echo ssh-command-ready"; then
+              ssh_ready=true
+              break
+            fi
+            sleep 10
+          done
+
+          if [ "$ssh_ready" != true ]; then
+            echo "SSH command channel was not ready after retries"
+            exit 1
+          fi
 
           cat > /tmp/deploy_remote.sh <<'REMOTE_SCRIPT'
           set -euo pipefail
