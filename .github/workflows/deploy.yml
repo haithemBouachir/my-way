@@ -333,12 +333,15 @@ jobs:
           sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml up -d
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Container status"
-          sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml ps
+          if ! timeout 20s sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml ps; then
+            echo "Container status command timed out; continuing with health checks"
+            sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' || true
+          fi
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for backend internal health"
           backend_ok=false
           for i in $(seq 1 30); do
-            code=$(sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -s -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
+            code=$(timeout 12s sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -s --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
             echo "Internal backend health attempt $i/30 HTTP=$code"
             if [ "$code" = "200" ]; then
               backend_ok=true
@@ -361,7 +364,7 @@ jobs:
             -o BatchMode=yes \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=20 \
+            -o ServerAliveCountMax=80 \
             -o StrictHostKeyChecking=no \
             ubuntu@${DEPLOY_HOST} "DEPLOY_HOST='${DEPLOY_HOST}' bash -se" < /tmp/deploy_remote.sh
 
