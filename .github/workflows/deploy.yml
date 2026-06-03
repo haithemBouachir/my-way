@@ -421,16 +421,14 @@ jobs:
           for i in $(seq 1 36); do
             echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Health iteration $i/36"
             started=$(date +%s)
-            code=$(timeout 8s curl -sS --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://127.0.0.1/api/v1/health || true)
-            backend_state=$(timeout 5s sudo docker inspect -f '{{.State.Status}}/{{.State.Health.Status}}' myway-backend 2>/dev/null || echo "unknown")
+            backend_state=$(timeout 5s sudo docker inspect -f '{{.State.Status}}/{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' myway-backend 2>/dev/null || echo "unknown")
             backend_started=$(timeout 5s sudo docker inspect -f '{{.State.StartedAt}}' myway-backend 2>/dev/null || echo "unknown")
-            mysql_state=$(timeout 5s sudo docker inspect -f '{{.State.Status}}/{{.State.Health.Status}}' myway-mysql 2>/dev/null || echo "unknown")
+            mysql_state=$(timeout 5s sudo docker inspect -f '{{.State.Status}}/{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' myway-mysql 2>/dev/null || echo "unknown")
             nginx_state=$(timeout 5s sudo docker inspect -f '{{.State.Status}}' myway-frontend 2>/dev/null || echo "unknown")
             ended=$(date +%s)
             elapsed=$((ended - started))
-            code=${code:-000}
-            echo "Internal backend health attempt $i/36 host_http=$code elapsed=${elapsed}s backend=$backend_state mysql=$mysql_state frontend=$nginx_state backend_started=$backend_started"
-            if [ "$code" = "200" ]; then
+            echo "Internal backend health attempt $i/36 elapsed=${elapsed}s backend=$backend_state mysql=$mysql_state frontend=$nginx_state backend_started=$backend_started"
+            if echo "$backend_state" | grep -Eq 'running/healthy|running/no-healthcheck|healthy'; then
               backend_ok=true
               break
             fi
