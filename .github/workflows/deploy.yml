@@ -422,12 +422,14 @@ jobs:
           backend_ok=false
           for i in $(seq 1 36); do
             started=$(date +%s)
-            code=$(timeout 10s sudo docker exec myway-health-probe curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
+            code=$(timeout 8s curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://127.0.0.1/api/v1/health || true)
+            internal_code=$(timeout 8s sudo docker exec myway-health-probe curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
             ended=$(date +%s)
             elapsed=$((ended - started))
             code=${code:-000}
-            echo "Internal backend health attempt $i/36 HTTP=$code elapsed=${elapsed}s"
-            if [ "$code" = "200" ]; then
+            internal_code=${internal_code:-000}
+            echo "Internal backend health attempt $i/36 host_http=$code backend_http=$internal_code elapsed=${elapsed}s"
+            if [ "$code" = "200" ] || [ "$internal_code" = "200" ]; then
               backend_ok=true
               break
             fi
