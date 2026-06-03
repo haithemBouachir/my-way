@@ -416,10 +416,13 @@ jobs:
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Entering backend health loop"
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for backend internal health"
+          sudo docker rm -f myway-health-probe >/dev/null 2>&1 || true
+          sudo docker run -d --name myway-health-probe --pull never --network my-way_default curlimages/curl:8.8.0 sleep 900 >/dev/null
+
           backend_ok=false
           for i in $(seq 1 36); do
             started=$(date +%s)
-            code=$(timeout 12s sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -s --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
+            code=$(timeout 10s sudo docker exec myway-health-probe curl -s --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
             ended=$(date +%s)
             elapsed=$((ended - started))
             code=${code:-000}
@@ -434,6 +437,7 @@ jobs:
             fi
             sleep 5
           done
+          sudo docker rm -f myway-health-probe >/dev/null 2>&1 || true
 
           if [ "$backend_ok" != true ]; then
             echo "Backend internal health did not become ready in time"
