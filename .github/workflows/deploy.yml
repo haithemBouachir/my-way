@@ -416,12 +416,20 @@ jobs:
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for backend internal health"
           backend_ok=false
-          for i in $(seq 1 30); do
+          for i in $(seq 1 36); do
+            started=$(date +%s)
             code=$(timeout 12s sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -s --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://backend:8080/api/v1/health || true)
-            echo "Internal backend health attempt $i/30 HTTP=$code"
+            ended=$(date +%s)
+            elapsed=$((ended - started))
+            code=${code:-000}
+            echo "Internal backend health attempt $i/36 HTTP=$code elapsed=${elapsed}s"
             if [ "$code" = "200" ]; then
               backend_ok=true
               break
+            fi
+            if [ $((i % 5)) -eq 0 ]; then
+              echo "Backend still starting; recent logs:"
+              sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml logs --tail=40 backend || true
             fi
             sleep 5
           done
