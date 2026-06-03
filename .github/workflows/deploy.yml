@@ -411,9 +411,10 @@ jobs:
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Container status"
           if ! timeout 20s sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml ps; then
             echo "Container status command timed out; continuing with health checks"
-            sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' || true
+            timeout 15s sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' || echo "docker ps fallback timed out; proceeding"
           fi
 
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Entering backend health loop"
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for backend internal health"
           backend_ok=false
           for i in $(seq 1 36); do
