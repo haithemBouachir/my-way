@@ -389,6 +389,19 @@ jobs:
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Logging in to GHCR"
           echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Ensuring swap is enabled"
+          if ! sudo swapon --show | grep -q '/swapfile'; then
+            sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile >/dev/null
+            sudo swapon /swapfile
+            if ! grep -q '^/swapfile ' /etc/fstab; then
+              echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+            fi
+          fi
+          free -h || true
+          sudo swapon --show || true
+
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Writing runtime env"
           {
             printf '%s\n' "MYSQL_DATABASE=my_way"
@@ -519,22 +532,27 @@ jobs:
             ubuntu@${DEPLOY_HOST} 'bash -se' <<'REMOTE_DIAG'
           set +e
           cd /opt/my-way
+          echo "=== host memory/swap ==="
+          timeout 20s free -h || true
+          timeout 20s sudo swapon --show || true
+          echo "=== recent kernel oom events ==="
+          timeout 20s sudo dmesg -T | grep -Ei 'out of memory|oom-killer|killed process' | tail -n 80 || true
           echo "=== docker compose ps ==="
-          sudo docker compose -f docker-compose.prod.yml ps
+          timeout 25s sudo docker compose -f docker-compose.prod.yml ps || true
           echo "=== docker compose ps (all) ==="
-          sudo docker compose -f docker-compose.prod.yml ps -a
+          timeout 25s sudo docker compose -f docker-compose.prod.yml ps -a || true
           echo "=== backend logs (last 200) ==="
-          sudo docker compose -f docker-compose.prod.yml logs --tail=200 backend
+          timeout 25s sudo docker compose -f docker-compose.prod.yml logs --tail=200 backend || true
           echo "=== mysql logs (last 200) ==="
-          sudo docker compose -f docker-compose.prod.yml logs --tail=200 mysql
+          timeout 25s sudo docker compose -f docker-compose.prod.yml logs --tail=200 mysql || true
           echo "=== frontend logs (last 200) ==="
-          sudo docker compose -f docker-compose.prod.yml logs --tail=200 frontend
+          timeout 25s sudo docker compose -f docker-compose.prod.yml logs --tail=200 frontend || true
           echo "=== frontend nginx config ==="
-          sudo docker exec myway-frontend nginx -T | sed -n '1,220p'
+          timeout 25s sudo docker exec myway-frontend nginx -T | sed -n '1,220p' || true
           echo "=== direct backend health from Docker network ==="
-          sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -sS -i http://backend:8080/api/v1/health
+          timeout 25s sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -sS -i http://backend:8080/api/v1/health || true
           echo "=== frontend->backend health via nginx inside Docker network ==="
-          sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -sS -i http://frontend/api/v1/health
+          timeout 25s sudo docker run --rm --network my-way_default curlimages/curl:8.8.0 -sS -i http://frontend/api/v1/health || true
           REMOTE_DIAG
 
       - name: Fail workflow when backend unhealthy

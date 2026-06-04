@@ -22,6 +22,7 @@ services:
     restart: always
     environment:
       SERVER_PORT: 8080
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=55 -XX:InitialRAMPercentage=20 -XX:+ExitOnOutOfMemoryError
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-86400}
       DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-myway}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
