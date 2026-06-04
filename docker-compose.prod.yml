@@ -37,7 +37,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 18
-      start_period: 30s
+      start_period: 90s
 
   frontend:
     image: ${FRONTEND_IMAGE}

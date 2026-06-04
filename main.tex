@@ -1,0 +1,325 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{float}
+
+\onehalfspacing
+\setlist[itemize]{itemsep=4pt,topsep=4pt}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+
+\begin{document}
+
+% -------------------------
+% Page de garde
+% -------------------------
+\begin{titlepage}
+  \centering
+  {\large Republique Tunisienne\par}
+  {\large Ministere de l'Enseignement Superieur et de la Recherche Scientifique\par}
+  \vspace{0.8cm}
+  {\Large Nom de l'etablissement\par}
+  \vspace{1.2cm}
+
+  {\Large \textbf{Rapport de Projet / PFE}\par}
+  \vspace{0.5cm}
+  {\large Specialite : \ldots\par}
+  \vspace{1.2cm}
+
+  {\Huge \textbf{Deploiement CI/CD d'une application cloud}\par}
+  \vspace{0.3cm}
+  {\Large Approche PRISM et fiabilisation du pipeline\par}
+  \vspace{1.5cm}
+
+  \begin{flushleft}
+    \textbf{Realise par :} \ldots\\
+    \textbf{Encadre par :} \ldots\\
+    \textbf{Classe :} \ldots\\
+    \textbf{Annee universitaire :} 2025--2026
+  \end{flushleft}
+
+  \vfill
+  {\large Date : \ldots\par}
+\end{titlepage}
+
+% -------------------------
+% Dedicace et remerciements
+% -------------------------
+\chapter*{Dedicace}
+\addcontentsline{toc}{chapter}{Dedicace}
+Je dedie ce travail a ma famille, a mes enseignants et a toute personne ayant contribue a mon apprentissage.
+
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+Je remercie mon encadrant, l'equipe pedagogique et mes collegues pour leur accompagnement,
+leurs conseils et leur soutien tout au long de ce projet.
+
+% -------------------------
+% Front matter
+% -------------------------
+\chapter*{Resume}
+\addcontentsline{toc}{chapter}{Resume}
+Ce rapport presente une demarche de deploiement continu sur infrastructure cloud,
+avec une approche PRISM orientee robustesse, observabilite et automatisation.
+Le travail met l'accent sur la gestion des incidents et la validation de la mise en production.
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+This report presents a CI/CD deployment approach on cloud infrastructure,
+using a PRISM framework focused on reliability, observability, and automation.
+The work highlights incident handling and production-readiness validation.
+
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+
+\chapter*{Liste des acronymes}
+\addcontentsline{toc}{chapter}{Liste des acronymes}
+\begin{itemize}
+  \item CI/CD : Continuous Integration / Continuous Deployment
+  \item EC2 : Elastic Compute Cloud
+  \item GHCR : GitHub Container Registry
+  \item IaC : Infrastructure as Code
+  \item SSH : Secure Shell
+  \item SLA : Service Level Agreement
+\end{itemize}
+
+\chapter*{Presentation}
+\addcontentsline{toc}{chapter}{Presentation}
+Ce document presente une demarche de deploiement continue d'une application web sur infrastructure cloud.
+L'objectif est pedagogique : expliquer une approche CI/CD fiable, reproductible et maintenable,
+avec un accent sur la gestion des incidents et la validation finale du service.
+
+Ce rapport est concu pour rester dans une plage de 35 a 40 pages en version finale,
+avec un niveau de detail oriente deploiement et non fonctionnel metier.
+
+\chapter{Contexte du Projet}
+\section{Objectif general}
+Le projet vise a automatiser la chaine complete de livraison :
+\begin{itemize}
+  \item construction des images,
+  \item publication dans un registre,
+  \item provisionning infrastructure,
+  \item deploiement automatise,
+  \item verification de sante post-deploiement.
+\end{itemize}
+
+\section{Cadre PRISM}
+L'approche PRISM structure la methode de travail :
+
+\subsection{P - Preparation}
+\begin{itemize}
+  \item preparation de l'environnement (cloud, secrets, depots, acces SSH),
+  \item preparation des fichiers d'orchestration et de configuration.
+\end{itemize}
+
+\subsection{R - Realisation}
+\begin{itemize}
+  \item construction automatique des images,
+  \item publication vers un registre de conteneurs.
+\end{itemize}
+
+\subsection{I - Integration}
+\begin{itemize}
+  \item provisionning de l'infrastructure,
+  \item connexion du pipeline avec la machine cible.
+\end{itemize}
+
+\subsection{S - Stabilisation}
+\begin{itemize}
+  \item verification de disponibilite SSH,
+  \item relances controlees, timeouts et fallback,
+  \item verification interne de sante des services.
+\end{itemize}
+
+\subsection{M - Monitoring / Maintenance}
+\begin{itemize}
+  \item diagnostics automatiques en cas d'echec,
+  \item ameliorations incrementales du workflow.
+\end{itemize}
+
+\chapter{Architecture}
+\section{Vue generale de deploiement}
+Elements principaux :
+\begin{itemize}
+  \item pipeline GitHub Actions (jobs build-images, infra, deploy),
+  \item instance cloud (EC2),
+  \item orchestration Docker Compose,
+  \item registre d'images GHCR,
+  \item verification de sante interne et externe.
+\end{itemize}
+
+Resultat attendu : une nouvelle version est construite, publiee, deployee et verifiee automatiquement.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox[c][5cm][c]{0.85\textwidth}{\centering
+  Capture architecture globale (a remplacer)}}
+  \caption{Architecture generale de deploiement}
+\end{figure}
+
+\section{Flux d'execution}
+\begin{enumerate}
+  \item Build des images et publication.
+  \item Application de l'infrastructure.
+  \item Verification SSH et readiness de la cible.
+  \item Deploiement compose et controles de sante.
+  \item Publication URL finale et diagnostics en cas d'incident.
+\end{enumerate}
+
+\chapter{Partie Conception}
+\section{Conception du pipeline CI/CD}
+Le workflow est concu avec trois blocs logiques :
+\begin{itemize}
+  \item \textbf{Build} : generation et push des images backend/frontend.
+  \item \textbf{Infra} : Terraform init/apply et extraction des sorties utiles.
+  \item \textbf{Deploy} : execution distante securisee, orchestration et verifications.
+\end{itemize}
+
+\section{Conception de la robustesse}
+Les mecanismes de fiabilite integres sont :
+\begin{itemize}
+  \item retries sur les etapes sensibles,
+  \item timeouts sur les commandes potentiellement bloquantes,
+  \item fallback d'infrastructure en cas d'instance non exploitable,
+  \item fallback de build en cas d'echec Buildx,
+  \item collecte de diagnostics en fin d'echec.
+\end{itemize}
+
+\section{Conception des criteres de validation}
+Le deploiement est valide si :
+\begin{itemize}
+  \item images construites et publiees,
+  \item cible joignable en SSH,
+  \item services en etat Up/Healthy,
+  \item endpoint de health en HTTP 200,
+  \item URL finale accessible.
+\end{itemize}
+
+\chapter{Partie Realisation}
+\section{Scenario 1 : Build et publication des images}
+\textbf{Objectif :} produire et publier les images versionnees.
+
+\textbf{Etapes :}
+\begin{itemize}
+  \item setup du runner,
+  \item build backend/frontend,
+  \item push GHCR avec tag SHA et latest,
+  \item activation du chemin fallback si Buildx indisponible.
+\end{itemize}
+
+\textbf{Resultat attendu :} images disponibles dans le registre.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox[c][5cm][c]{0.85\textwidth}{\centering
+  Capture logs build et push (a remplacer)}}
+  \caption{Scenario 1 - Build et publication}
+\end{figure}
+
+\section{Scenario 2 : Provisionning et acces cible}
+\textbf{Objectif :} preparer l'environnement cloud pour le deploiement.
+
+\textbf{Etapes :}
+\begin{itemize}
+  \item Terraform init/apply,
+  \item lecture des outputs (IP publique, instance id),
+  \item verification des status checks,
+  \item verification de readiness SSH avec retries.
+\end{itemize}
+
+\textbf{Resultat attendu :} instance operationnelle et joignable.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox[c][5cm][c]{0.85\textwidth}{\centering
+  Capture Terraform et SSH readiness (a remplacer)}}
+  \caption{Scenario 2 - Provisionning et acces}
+\end{figure}
+
+\section{Scenario 3 : Deploiement et verification de sante}
+\textbf{Objectif :} lancer les services et valider la disponibilite.
+
+\textbf{Etapes :}
+\begin{itemize}
+  \item pull des images,
+  \item lancement Docker Compose,
+  \item health checks internes puis externes,
+  \item collecte de logs en cas d'echec.
+\end{itemize}
+
+\textbf{Resultat attendu :} service accessible avec HTTP 200 sur health.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox[c][5cm][c]{0.85\textwidth}{\centering
+  Capture status conteneurs et health checks (a remplacer)}}
+  \caption{Scenario 3 - Deploiement et validation}
+\end{figure}
+
+\section{Incidents et corrections appliquees}
+\begin{enumerate}
+  \item Timeout SSH malgre instance active.
+  \item Blocages sur commandes non bornees (status/probes).
+  \item Lenteur de readiness backend.
+  \item Echec Buildx lie a des timeouts reseau externes.
+\end{enumerate}
+
+Pour chaque incident, la correction a suivi la logique : identifier, borner, ajouter fallback, mesurer.
+
+\chapter*{Conclusion Generale}
+\addcontentsline{toc}{chapter}{Conclusion Generale}
+La demarche PRISM a permis de structurer un deploiement CI/CD plus fiable et plus pedagogique.
+La valeur principale est la maitrise d'un processus reproductible, observable et ameliorable,
+au-dela de la seule mise en ligne technique.
+
+Perspectives :
+\begin{itemize}
+  \item ajouter des tests automatiques avant deploiement,
+  \item integrer rollback automatique,
+  \item renforcer monitoring metriques et alertes,
+  \item suivre des indicateurs SLA simples (disponibilite, temps de deploiement).
+\end{itemize}
+
+\appendix
+\chapter{Annexes}
+\section{Captures d'ecran a remplacer}
+\begin{itemize}
+  \item Capture 1 : vue globale du workflow CI/CD.
+  \item Capture 2 : logs build/push GHCR.
+  \item Capture 3 : output Terraform + IP cible.
+  \item Capture 4 : verification SSH et readiness.
+  \item Capture 5 : demarrage Docker Compose.
+  \item Capture 6 : health checks internes/externes.
+  \item Capture 7 : URL finale accessible.
+  \item Capture 8 : logs diagnostics en cas d'echec.
+\end{itemize}
+
+\chapter*{Bibliographie}
+\addcontentsline{toc}{chapter}{Bibliographie}
+\begin{thebibliography}{9}
+  \bibitem{gha}
+  GitHub, \textit{GitHub Actions Documentation},\
+  \url{https://docs.github.com/actions}
+
+  \bibitem{docker}
+  Docker, \textit{Docker Documentation},\
+  \url{https://docs.docker.com}
+
+  \bibitem{terraform}
+  HashiCorp, \textit{Terraform Documentation},\
+  \url{https://developer.hashicorp.com/terraform/docs}
+
+  \bibitem{aws}
+  Amazon Web Services, \textit{Amazon EC2 Documentation},\
+  \url{https://docs.aws.amazon.com/ec2/}
+\end{thebibliography}
+
+\end{document}

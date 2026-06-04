@@ -1,0 +1,184 @@
+RAPPORT DE DEPLOIEMENT (MODELE PEDAGOGIQUE - TUNISIE)
+
+Titre du projet:
+Auteur(s):
+Etablissement:
+Niveau/Classe:
+Encadrant:
+Date:
+
+==================================================
+1) CONTEXTE ET OBJECTIF
+==================================================
+Ce rapport presente la demarche de deploiement continue d une application web sur une infrastructure cloud.
+L objectif principal est pedagogique: montrer comment automatiser la construction, la livraison et la mise en ligne avec un pipeline CI/CD fiable.
+
+Ce document se concentre sur:
+- la methode de deploiement,
+- la robustesse du pipeline,
+- la gestion des incidents,
+- la validation finale du service.
+
+==================================================
+2) CADRE PRISM (APPROCHE UTILISEE)
+==================================================
+Dans ce projet, nous utilisons la logique PRISM:
+
+P - Preparation
+- Preparation de l environnement (cloud, secrets, depots, acces SSH)
+- Preparation des fichiers d orchestration et de configuration
+
+R - Realisation
+- Construction automatique des images
+- Publication vers un registre de conteneurs
+
+I - Integration
+- Provisionning de l infrastructure
+- Connexion du pipeline avec la machine cible
+
+S - Stabilisation
+- Verification de disponibilite SSH
+- Relances controlees, timeouts et fallback
+- Verification interne de sante des services
+
+M - Monitoring / Maintenance
+- Diagnostics automatiques en cas d echec
+- Ameliorations incrementales du workflow
+
+==================================================
+3) ARCHITECTURE DE DEPLOIEMENT (VUE GENERALE)
+==================================================
+Elements principaux:
+- Pipeline GitHub Actions (jobs de build, infra, deploy)
+- Instance cloud (EC2)
+- Orchestration par Docker Compose
+- Registre d images (GHCR)
+- Verification de sante apres deploiement
+
+Resultat attendu:
+Une nouvelle version est automatiquement construite, publiee, deployee puis verifiee.
+
+==================================================
+4) DEROULEMENT TECHNIQUE DU PIPELINE
+==================================================
+Etape A - Build
+- Construction des images backend/frontend
+- Push des images avec tags (SHA + latest)
+- Mecanisme de secours si Buildx echoue
+
+Etape B - Infrastructure
+- Initialisation Terraform
+- Application de l etat cible
+- Recuperation de l IP publique et de l instance cible
+
+Etape C - Deploiement
+- Verification de l etat machine et de SSH
+- Connexion distante securisee
+- Pull des images et lancement compose
+- Verification de sante interne puis externe
+
+Etape D - Post verification
+- Publication URL finale
+- Collecte de diagnostics si erreur
+
+==================================================
+5) INCIDENTS RENCONTRES ET CORRECTIONS
+==================================================
+Exemple de problemes pedagogiquement interessants:
+
+1. Timeout SSH malgre machine active
+- Cause probable: service SSH non stable apres boot
+- Correction: boucle d attente de banner + retries + fallback infrastructure
+
+2. Blocage apparent pendant status containers
+- Cause probable: commande non bornee
+- Correction: timeout explicite + commande de secours + logs heartbeat
+
+3. Sante backend lente
+- Cause probable: temps de demarrage applicatif
+- Correction: boucle de health check interne amelioree + observabilite
+
+4. Echec Buildx lie au reseau externe
+- Cause probable: timeout vers Docker Hub
+- Correction: chemin fallback de build/push classique
+
+==================================================
+6) VALIDATION ET CRITERES DE REUSSITE
+==================================================
+Le deploiement est considere valide si:
+- les images sont construites et publiees,
+- l instance cible est joignable,
+- les conteneurs sont en etat Up/Healthy,
+- l endpoint de health renvoie HTTP 200,
+- l URL finale est accessible.
+
+Indicateurs a relever:
+- duree totale du pipeline,
+- taux de succes sur N executions,
+- temps moyen de remediation en cas d incident,
+- nombre d interventions manuelles restantes.
+
+==================================================
+7) CAPTURES D ECRAN (DESCRIPTION A REMPLACER)
+==================================================
+Note: Inserer vos propres captures a la place des descriptions suivantes.
+
+Capture 1 - Vue generale du workflow CI/CD
+Description image: ecran GitHub Actions montrant les jobs build-images, infra et deploy avec statut global.
+
+Capture 2 - Logs de build des images
+Description image: extrait des logs montrant la construction et le push des images vers GHCR.
+
+Capture 3 - Provisionning infrastructure
+Description image: sortie Terraform indiquant creation/verification de l instance et recuperation de l IP.
+
+Capture 4 - Verification SSH
+Description image: logs de verification de connectivite SSH avec tentatives et succes.
+
+Capture 5 - Lancement Docker Compose
+Description image: logs de demarrage des services et statut des conteneurs (Up/Healthy).
+
+Capture 6 - Health checks
+Description image: logs des tentatives de verification interne/externe avec code HTTP final 200.
+
+Capture 7 - URL finale accessible
+Description image: navigateur affichant la page servie apres deploiement reussi.
+
+Capture 8 - Exemple diagnostic en echec
+Description image: extrait de logs backend/mysql utilises pour analyser un incident.
+
+==================================================
+8) ANALYSE PEDAGOGIQUE (CONTEXTE TUNISIE)
+==================================================
+Apports pour la formation:
+- Comprendre une chaine DevOps complete de facon pratique
+- Relier reseau, cloud, conteneurs et automatisation
+- Apprendre la gestion d incident avec methodologie
+- Renforcer la culture qualite et tracabilite
+
+Competences developpees:
+- CI/CD
+- Infrastructure as Code
+- Administration Linux de base
+- Lecture de logs et diagnostic
+- Securisation des secrets
+
+==================================================
+9) RECOMMANDATIONS
+==================================================
+- Ajouter des tests automatiques avant build
+- Ajouter une policy de rollback automatique
+- Ajouter monitoring metriques + alertes
+- Mesurer des SLA simples (disponibilite, temps de deploiement)
+- Normaliser le template de rapport pour les promotions suivantes
+
+==================================================
+10) CONCLUSION
+==================================================
+La mise en place du pipeline de deploiement montre qu une approche structuree (PRISM) permet d obtenir un processus plus fiable, plus reproductible et plus formateur.
+Le principal resultat n est pas seulement la mise en ligne, mais la capacite a detecter, comprendre et corriger les incidents de facon methodique.
+
+Annexe (optionnelle):
+- tableau chronologique des executions
+- liste des correctifs appliques
+- liens vers commits representatifs
