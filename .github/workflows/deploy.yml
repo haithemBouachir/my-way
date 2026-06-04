@@ -329,6 +329,8 @@ jobs:
           exit 1
 
       - name: Deploy with Docker Compose
+        id: deploy_compose
+        continue-on-error: true
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -476,6 +478,7 @@ jobs:
           echo "http://${DEPLOY_HOST}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify backend health endpoint
+        if: steps.deploy_compose.outcome == 'success'
         id: healthcheck
         continue-on-error: true
         run: |
@@ -499,7 +502,7 @@ jobs:
           exit 1
 
       - name: Collect remote docker diagnostics
-        if: steps.healthcheck.outcome == 'failure'
+        if: always() && (steps.deploy_compose.outcome == 'failure' || steps.healthcheck.outcome == 'failure')
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -510,6 +513,8 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             -o BatchMode=yes \
             -o ConnectTimeout=30 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=12 \
             -o StrictHostKeyChecking=no \
             ubuntu@${DEPLOY_HOST} 'bash -se' <<'REMOTE_DIAG'
           set +e
@@ -533,7 +538,11 @@ jobs:
           REMOTE_DIAG
 
       - name: Fail workflow when backend unhealthy
-        if: steps.healthcheck.outcome == 'failure'
+        if: steps.deploy_compose.outcome == 'failure' || steps.healthcheck.outcome == 'failure'
         run: |
-          echo "Backend health endpoint is not reachable after deploy. Check diagnostics above."
+          if [ "${{ steps.deploy_compose.outcome }}" = "failure" ]; then
+            echo "Deploy step failed before health verification. Check remote diagnostics above."
+          else
+            echo "Backend health endpoint is not reachable after deploy. Check diagnostics above."
+          fi
           exit 1
