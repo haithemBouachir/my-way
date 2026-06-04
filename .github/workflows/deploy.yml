@@ -405,9 +405,38 @@ jobs:
           sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml pull
           sudo docker pull curlimages/curl:8.8.0
 
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting containers and waiting for healthy state"
-          if ! timeout 420s sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml up -d --wait --wait-timeout 300; then
-            echo "docker compose up --wait failed or timed out"
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting containers"
+          timeout 180s sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml up -d
+
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for backend health (max 7 min)"
+          backend_healthy=false
+          for i in $(seq 1 42); do
+            status=$(sudo docker inspect myway-backend --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' 2>/dev/null || echo "missing")
+            running=$(sudo docker inspect myway-backend --format '{{.State.Running}}' 2>/dev/null || echo "false")
+            state_status=$(sudo docker inspect myway-backend --format '{{.State.Status}}' 2>/dev/null || echo "unknown")
+            exit_code=$(sudo docker inspect myway-backend --format '{{.State.ExitCode}}' 2>/dev/null || echo "-1")
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] backend health attempt $i/42: health=$status running=$running state=$state_status exit_code=$exit_code"
+
+            if [ "$status" = "healthy" ]; then
+              backend_healthy=true
+              break
+            fi
+
+            if [ "$running" != "true" ]; then
+              echo "Backend container is not running; stopping wait loop early"
+              break
+            fi
+
+            if [ $((i % 6)) -eq 0 ]; then
+              echo "=== backend logs heartbeat (last 40) ==="
+              timeout 20s sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml logs --tail=40 backend || true
+            fi
+
+            sleep 10
+          done
+
+          if [ "$backend_healthy" != true ]; then
+            echo "backend did not become healthy within bounded wait"
             echo "=== docker compose ps -a ==="
             timeout 20s sudo docker compose --env-file /opt/my-way/.env -f /opt/my-way/docker-compose.prod.yml ps -a || true
             echo "=== backend inspect state ==="
