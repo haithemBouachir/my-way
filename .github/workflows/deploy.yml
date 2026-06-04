@@ -410,12 +410,14 @@ jobs:
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Waiting for backend health (max 7 min)"
           backend_healthy=false
+          wait_started_at=$(date +%s)
           for i in $(seq 1 42); do
-            status=$(sudo docker inspect myway-backend --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' 2>/dev/null || echo "missing")
-            running=$(sudo docker inspect myway-backend --format '{{.State.Running}}' 2>/dev/null || echo "false")
-            state_status=$(sudo docker inspect myway-backend --format '{{.State.Status}}' 2>/dev/null || echo "unknown")
-            exit_code=$(sudo docker inspect myway-backend --format '{{.State.ExitCode}}' 2>/dev/null || echo "-1")
-            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] backend health attempt $i/42: health=$status running=$running state=$state_status exit_code=$exit_code"
+            status=$(timeout 8s sudo docker inspect myway-backend --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' 2>/dev/null || echo "missing")
+            running=$(timeout 8s sudo docker inspect myway-backend --format '{{.State.Running}}' 2>/dev/null || echo "false")
+            state_status=$(timeout 8s sudo docker inspect myway-backend --format '{{.State.Status}}' 2>/dev/null || echo "unknown")
+            exit_code=$(timeout 8s sudo docker inspect myway-backend --format '{{.State.ExitCode}}' 2>/dev/null || echo "-1")
+            elapsed=$(( $(date +%s) - wait_started_at ))
+            echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] backend health attempt $i/42 elapsed=${elapsed}s: health=$status running=$running state=$state_status exit_code=$exit_code"
 
             if [ "$status" = "healthy" ]; then
               backend_healthy=true
